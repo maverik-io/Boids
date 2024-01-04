@@ -1,7 +1,8 @@
 import random
-
 import pygame as pg
+
 from pygame.math import Vector2
+from utils import Obstacle
 
 
 def poly_points(pos, heading):
@@ -39,7 +40,7 @@ class Boid:
         self.vel = Vector2(
             random.choice((-1, 1)) * random.random(),
             random.choice((-1, 1)) * random.random(),
-            ).normalize() * random.random() * self.speed
+        ).normalize() * random.random() * self.speed
 
         self.trail = []
 
@@ -56,6 +57,14 @@ class Boid:
                     continue
                 if (boid.pos - self.pos).length() < Boid.avoidance_range:
                     sep -= boid.pos - self.pos
+
+        for obstacle in Obstacle.obstacles:
+            if (obstacle.pos - self.pos).length() < Boid.visual_range:
+                if obstacle.bad:
+                    sep -= obstacle.pos - self.pos
+                elif (obstacle.pos - self.pos).length() < Boid.avoidance_range:
+                    sep -= obstacle.pos - self.pos
+
 
         return sep
 
@@ -91,7 +100,7 @@ class Boid:
                 self.pos + separation_vector * Boid.separation_factor,
                 self.pos + alignment_vector * Boid.alignment_factor,
                 self.pos + cohesion_vector * Boid.cohesion_factor,
-                ]
+            ]
 
         self.acc = (
                 separation_vector * Boid.separation_factor
@@ -129,7 +138,7 @@ class Boid:
         self.pos += self.vel
 
         self.trail.append(self.pos.copy())
-        self.trail = self.trail[-int(500/self.speed):]
+        self.trail = self.trail[-int(500 / self.speed):]
 
     def draw(self, screen):
         pg.draw.polygon(screen, 'red' if self.debug else '#12bac9',
