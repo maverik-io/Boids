@@ -26,10 +26,12 @@ pg.init()
 screen = pg.display.set_mode((1600, 950))
 clock = pg.time.Clock()
 
-number_of_boids = 120
+number_of_boids = 50
+number_of_predator_boids = 0
 add_mode = 'obstacle'
 
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950))) for _ in range(number_of_boids)]
+[Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), True) for _ in range(number_of_predator_boids)]
 
 while True:
     for event in pg.event.get():
@@ -41,6 +43,8 @@ while True:
                 case 1:
                     if add_mode == 'boid':
                         Boid(Vector2(*event.pos))
+                    elif add_mode == 'predator':
+                        Boid(Vector2(*event.pos), True)
                     elif add_mode == 'obstacle':
                         Obstacle(Vector2(*event.pos))
                     elif add_mode == 'bad_obstacle':
@@ -50,6 +54,8 @@ while True:
                     if add_mode == 'obstacle':
                         add_mode = 'boid'
                     elif add_mode == 'boid':
+                        add_mode = 'predator'
+                    elif add_mode == 'predator':
                         add_mode = 'bad_obstacle'
                     elif add_mode == 'bad_obstacle':
                         add_mode = 'obstacle'

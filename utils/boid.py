@@ -31,9 +31,9 @@ class Boid:
     do_trails = False
     do_circles = False
 
-    edge_mode = 'wrap'
+    edge_mode = 'turn'
 
-    def __init__(self, pos: Vector2, debug=False):
+    def __init__(self, pos: Vector2, predator=False):
         self.speed = 10
         self.acc = Vector2()
         self.pos = pos.copy()
@@ -45,8 +45,7 @@ class Boid:
 
         self.trail = []
 
-        self.debug_vectors = None
-        self.debug = debug
+        self.is_predator = predator
 
         self.boids.append(self)
 
@@ -56,7 +55,9 @@ class Boid:
             if (boid.pos - self.pos).length() < self.visual_range:
                 if boid == self:
                     continue
-                if (boid.pos - self.pos).length() < self.avoidance_range:
+                if boid.is_predator and not self.is_predator:
+                    sep -= boid.pos - self.pos
+                elif (boid.pos - self.pos).length() < self.avoidance_range:
                     sep -= boid.pos - self.pos
 
         for obstacle in Obstacle.obstacles:
@@ -72,9 +73,14 @@ class Boid:
         align = Vector2()
         n = 0
         for boid in self.boids:
-            if (boid.pos - self.pos).length() < self.visual_range:
-                align += boid.vel
-                n += 1
+            if not self.is_predator:
+                if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
+                    align += boid.vel
+                    n += 1
+            else:
+                if (boid.pos - self.pos).length() < self.visual_range and boid.is_predator:
+                    align += boid.vel
+                    n += 1
 
         align /= n if n > 1 else 1
         return align
@@ -83,9 +89,14 @@ class Boid:
         center: Vector2 = Vector2(0, 0)
         n = 0
         for boid in self.boids:
-            if (boid.pos - self.pos).length() < self.visual_range:
-                center += boid.pos
-                n += 1
+            if not self.is_predator:
+                if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
+                    center += boid.pos
+                    n += 1
+            else:
+                if (boid.pos - self.pos).length() < self.visual_range and boid.is_predator:
+                    center += boid.pos
+                    n += 1
 
         center /= n if n > 0 else 1
         return center - self.pos
@@ -94,13 +105,6 @@ class Boid:
         separation_vector = self.separation()
         alignment_vector = self.alignment()
         cohesion_vector = self.cohesion()
-
-        if self.debug:
-            self.debug_vectors = [
-                self.pos + separation_vector * self.separation_factor,
-                self.pos + alignment_vector * self.alignment_factor,
-                self.pos + cohesion_vector * self.cohesion_factor,
-            ]
 
         self.acc = (
                 separation_vector * self.separation_factor
@@ -141,14 +145,10 @@ class Boid:
         self.trail = self.trail[-int(500 / self.speed):]
 
     def draw(self, screen):
-        pg.draw.polygon(screen, 'red' if self.debug else '#12bac9',
+        pg.draw.polygon(screen, 'red' if self.is_predator else '#12bac9',
                         poly_points(self.pos.copy(), 180 - self.vel.angle_to(Vector2(0, 1))))
         if self.do_circles:
-            pg.draw.circle(screen, 'red' if self.debug else '#12bac9', self.pos, self.visual_range, 1)
-            pg.draw.circle(screen, 'red' if self.debug else '#12bac9', self.pos, self.avoidance_range, 1)
+            pg.draw.circle(screen, 'red' if self.is_predator else '#12bac9', self.pos, self.visual_range, 1)
+            pg.draw.circle(screen, 'red' if self.is_predator else '#12bac9', self.pos, self.avoidance_range, 1)
         if len(self.trail) >= 2 and self.do_trails:
-            pg.draw.lines(screen, 'red' if self.debug else '#12bac9', False, self.trail)
-        if self.debug:
-            for i, point in enumerate(self.debug_vectors):
-                pg.draw.line(screen, ['green', 'blue', 'red'][i], self.pos, point, 2)
-                pg.draw.circle(screen, ['green', 'blue', 'red'][i], self.pos, 2)
+            pg.draw.lines(screen, 'red' if self.is_predator else '#12bac9', False, self.trail)
