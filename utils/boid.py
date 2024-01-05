@@ -1,7 +1,8 @@
 import random
-import pygame as pg
 
+import pygame as pg
 from pygame.math import Vector2
+
 from utils import Obstacle
 
 
@@ -22,15 +23,15 @@ class Boid:
     alignment_factor = 0.05
     cohesion_factor = 0.05
 
-    turn_factor = 3
+    turn_factor = 2
 
     visual_range = 75
     avoidance_range = 30
 
-    do_trails = True
+    do_trails = False
     do_circles = False
 
-    edge_mode = 'turn'
+    edge_mode = 'wrap'
 
     def __init__(self, pos: Vector2, debug=False):
         self.speed = 10
@@ -47,32 +48,31 @@ class Boid:
         self.debug_vectors = None
         self.debug = debug
 
-        Boid.boids.append(self)
+        self.boids.append(self)
 
     def separation(self):
         sep = Vector2(0, 0)
-        for boid in Boid.boids:
-            if (boid.pos - self.pos).length() < Boid.visual_range:
+        for boid in self.boids:
+            if (boid.pos - self.pos).length() < self.visual_range:
                 if boid == self:
                     continue
-                if (boid.pos - self.pos).length() < Boid.avoidance_range:
+                if (boid.pos - self.pos).length() < self.avoidance_range:
                     sep -= boid.pos - self.pos
 
         for obstacle in Obstacle.obstacles:
-            if (obstacle.pos - self.pos).length() < Boid.visual_range:
+            if (obstacle.pos - self.pos).length() < self.visual_range:
                 if obstacle.bad:
                     sep -= obstacle.pos - self.pos
-                elif (obstacle.pos - self.pos).length() < Boid.avoidance_range:
+                elif (obstacle.pos - self.pos).length() < self.avoidance_range:
                     sep -= obstacle.pos - self.pos
-
 
         return sep
 
     def alignment(self):
         align = Vector2()
         n = 0
-        for boid in Boid.boids:
-            if (boid.pos - self.pos).length() < Boid.visual_range:
+        for boid in self.boids:
+            if (boid.pos - self.pos).length() < self.visual_range:
                 align += boid.vel
                 n += 1
 
@@ -82,8 +82,8 @@ class Boid:
     def cohesion(self):
         center: Vector2 = Vector2(0, 0)
         n = 0
-        for boid in Boid.boids:
-            if (boid.pos - self.pos).length() < Boid.visual_range:
+        for boid in self.boids:
+            if (boid.pos - self.pos).length() < self.visual_range:
                 center += boid.pos
                 n += 1
 
@@ -97,15 +97,15 @@ class Boid:
 
         if self.debug:
             self.debug_vectors = [
-                self.pos + separation_vector * Boid.separation_factor,
-                self.pos + alignment_vector * Boid.alignment_factor,
-                self.pos + cohesion_vector * Boid.cohesion_factor,
+                self.pos + separation_vector * self.separation_factor,
+                self.pos + alignment_vector * self.alignment_factor,
+                self.pos + cohesion_vector * self.cohesion_factor,
             ]
 
         self.acc = (
-                separation_vector * Boid.separation_factor
-                + alignment_vector * Boid.alignment_factor
-                + cohesion_vector * Boid.cohesion_factor
+                separation_vector * self.separation_factor
+                + alignment_vector * self.alignment_factor
+                + cohesion_vector * self.cohesion_factor
         )
 
     def update(self):
@@ -115,22 +115,22 @@ class Boid:
 
             case 'turn':
                 if self.pos.x < 100:
-                    self.acc.x += Boid.turn_factor
+                    self.acc.x += self.turn_factor
                 elif self.pos.y < 100:
-                    self.acc.y += Boid.turn_factor
+                    self.acc.y += self.turn_factor
                 elif self.pos.x > 1500:
-                    self.acc.x -= Boid.turn_factor
+                    self.acc.x -= self.turn_factor
                 elif self.pos.y > 850:
-                    self.acc.y -= Boid.turn_factor
+                    self.acc.y -= self.turn_factor
 
             case 'wrap':
                 if self.pos.x < 0:
-                    self.pos.x = 1000
+                    self.pos.x = 1600
                 elif self.pos.y < 0:
-                    self.pos.y = 1000
-                elif self.pos.x > 1000:
+                    self.pos.y = 950
+                elif self.pos.x > 1600:
                     self.pos.x = 0
-                elif self.pos.y > 1000:
+                elif self.pos.y > 950:
                     self.pos.y = 0
 
         self.vel += self.acc
@@ -143,10 +143,10 @@ class Boid:
     def draw(self, screen):
         pg.draw.polygon(screen, 'red' if self.debug else '#12bac9',
                         poly_points(self.pos.copy(), 180 - self.vel.angle_to(Vector2(0, 1))))
-        if Boid.do_circles:
+        if self.do_circles:
             pg.draw.circle(screen, 'red' if self.debug else '#12bac9', self.pos, self.visual_range, 1)
             pg.draw.circle(screen, 'red' if self.debug else '#12bac9', self.pos, self.avoidance_range, 1)
-        if len(self.trail) >= 2 and Boid.do_trails:
+        if len(self.trail) >= 2 and self.do_trails:
             pg.draw.lines(screen, 'red' if self.debug else '#12bac9', False, self.trail)
         if self.debug:
             for i, point in enumerate(self.debug_vectors):

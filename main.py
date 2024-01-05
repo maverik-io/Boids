@@ -16,15 +16,20 @@ def debug(*nums):
     screen.blit(label, rect)
 
 
+def update(boid):
+    boid.move()
+    boid.update()
+    boid.draw(screen)
+
+
 pg.init()
 screen = pg.display.set_mode((1600, 950))
 clock = pg.time.Clock()
 
-number_of_boids = 60
+number_of_boids = 120
 add_mode = 'obstacle'
 
-for i in range(number_of_boids):
-    Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)))
+[Boid(Vector2(random.randint(0, 1600), random.randint(0, 950))) for _ in range(number_of_boids)]
 
 while True:
     for event in pg.event.get():
@@ -59,13 +64,13 @@ while True:
                         Boid.do_trails = True
 
     screen.fill('#444444')
-    for boid in Boid.boids:
-        boid.move()
-        boid.update()
-        boid.draw(screen)
 
-    for obstacle in Obstacle.obstacles:
-        obstacle.draw(screen)
+    [update(boid) for boid in Boid.boids]
+
+    [obstacle.draw(screen) for obstacle in Obstacle.obstacles]
+
+    # TODO: Implement Ui
+    # Ui.draw()
 
     debug(f'{clock.get_fps():.0f}', len(Boid.boids), f'Current: {add_mode}')
 
