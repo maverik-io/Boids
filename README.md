@@ -4,7 +4,7 @@ This is a Pygame implementation of the Boids algorithm, which simulates the floc
 
 ## Usage
 
-Run the `main.py` script to start the simulation. You can add boids or obstacles by clicking on the screen. The behavior of the click (whether it adds a boid, an obstacle, or a "bad" obstacle) can be toggled by clicking the middle mouse button.Debug can be accessed by left-clicking the mouse.
+Run the `main.py` script to start the simulation. You can add boids or obstacles by clicking on the screen. The behavior of the click (whether it adds a boid, an obstacle, or a "bad" obstacle) can be toggled by clicking the middle mouse button. Debug can be accessed by left-clicking the mouse.
 
 ## Dependencies
 
