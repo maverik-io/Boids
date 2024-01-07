@@ -10,7 +10,7 @@ def debug(*nums):
     nums = [str(num) for num in nums]
     txt = '|'.join(nums)
 
-    label = pg.font.SysFont('monospace', 40).render(txt, True, 'white', 'black')
+    label = pg.font.Font('Assets/Fonts/Jetbrains_Mono.ttf', 40).render(txt, True, 'white')
     rect = label.get_rect(topleft=(0, 0))
 
     screen.blit(label, rect)
@@ -23,14 +23,15 @@ def update(boid):
 
 
 pg.init()
-screen = pg.display.set_mode((1600, 950))
+screen = pg.display.set_mode((1900, 950))
+pg.display.set_caption('Boids')
 clock = pg.time.Clock()
 
 number_of_boids = 50
-number_of_predator_boids = 0
+number_of_predator_boids = 50
 add_mode = 'obstacle'
 
-[Boid(Vector2(random.randint(0, 1600), random.randint(0, 950))) for _ in range(number_of_boids)]
+[Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), False) for _ in range(number_of_boids)]
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), True) for _ in range(number_of_predator_boids)]
 
 while True:
@@ -71,14 +72,16 @@ while True:
 
     screen.fill('#444444')
 
+    Boid.update_quad(screen)
     [update(boid) for boid in Boid.boids]
-
+    Obstacle.update_quad(screen)
     [obstacle.draw(screen) for obstacle in Obstacle.obstacles]
 
     # TODO: Implement Ui
     # Ui.draw()
 
     debug(f'{clock.get_fps():.0f}', len(Boid.boids), f'Current: {add_mode}')
+    pg.draw.rect(screen, 'black', (1600, 0, 300, 950))
 
     pg.display.update()
     clock.tick(60)

@@ -1,9 +1,8 @@
 import random
-
 import pygame as pg
 from pygame.math import Vector2
 
-from utils import Obstacle
+from utils import Obstacle, QuadTree
 
 
 def poly_points(pos, heading):
@@ -17,6 +16,7 @@ def poly_points(pos, heading):
 
 
 class Boid:
+    boids_quad = QuadTree(pg.Rect(-100, 100, 1700, 1050))
     boids = []
 
     separation_factor = 0.05
@@ -48,11 +48,20 @@ class Boid:
         self.is_predator = predator
 
         self.boids.append(self)
+        self.boids_quad.insert(self.pos, self)
+
+    @staticmethod
+    def update_quad(screen):
+        Boid.boids_quad = QuadTree(pg.Rect(-100, -100, 1800, 1150))
+
+        for boid in Boid.boids:
+            Boid.boids_quad.insert(boid.pos, boid)
+        # Boid.boids_quad.draw(screen)
 
     def separation(self):
         sep = Vector2(0, 0)
-        for boid in self.boids:
-            if (boid.pos - self.pos).length() < self.visual_range:
+        for _, boid in self.boids_quad.query_radius(self.pos, self.visual_range, []):
+            if (boid.pos - self.pos).length():
                 if boid == self:
                     continue
                 if boid.is_predator and not self.is_predator:
@@ -60,7 +69,7 @@ class Boid:
                 elif (boid.pos - self.pos).length() < self.avoidance_range:
                     sep -= boid.pos - self.pos
 
-        for obstacle in Obstacle.obstacles:
+        for _, obstacle in Obstacle.obstacles_quad.query_radius(self.pos, self.visual_range, []):
             if (obstacle.pos - self.pos).length() < self.visual_range:
                 if obstacle.bad:
                     sep -= obstacle.pos - self.pos
@@ -72,7 +81,8 @@ class Boid:
     def alignment(self):
         align = Vector2()
         n = 0
-        for boid in self.boids:
+        for _, boid in self.boids_quad.query_radius(self.pos, self.visual_range, []):
+
             if not self.is_predator:
                 if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
                     align += boid.vel
@@ -88,7 +98,9 @@ class Boid:
     def cohesion(self):
         center: Vector2 = Vector2(0, 0)
         n = 0
-        for boid in self.boids:
+
+        for _, boid in self.boids_quad.query_radius(self.pos, self.visual_range, []):
+
             if not self.is_predator:
                 if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
                     center += boid.pos
