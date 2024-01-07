@@ -3,7 +3,7 @@ import pygame as pg
 from sys import exit
 from pygame.math import Vector2
 
-from utils import Boid, Obstacle
+from utils import Boid, Obstacle, Ui
 
 
 def debug(*nums):
@@ -17,7 +17,7 @@ def debug(*nums):
 
 
 def update(boid):
-    boid.move()
+    boid.move(goal_pos)
     boid.update()
     boid.draw(screen)
 
@@ -27,12 +27,17 @@ screen = pg.display.set_mode((1900, 950))
 pg.display.set_caption('Boids')
 clock = pg.time.Clock()
 
-number_of_boids = 50
-number_of_predator_boids = 50
+number_of_boids = 100
+number_of_predator_boids = 0
 add_mode = 'obstacle'
+
+goal_pos = Vector2()
 
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), False) for _ in range(number_of_boids)]
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), True) for _ in range(number_of_predator_boids)]
+
+# [Obstacle(Vector2(random.randint(0, 1600), random.randint(0, 950)), not (_ % 3)) for _ in range(50)]
+
 
 while True:
     for event in pg.event.get():
@@ -77,11 +82,9 @@ while True:
     Obstacle.update_quad(screen)
     [obstacle.draw(screen) for obstacle in Obstacle.obstacles]
 
-    # TODO: Implement Ui
-    # Ui.draw()
-
     debug(f'{clock.get_fps():.0f}', len(Boid.boids), f'Current: {add_mode}')
-    pg.draw.rect(screen, 'black', (1600, 0, 300, 950))
+
+    Ui.draw(clock.get_fps(), screen)
 
     pg.display.update()
-    clock.tick(60)
+    clock.tick(0)

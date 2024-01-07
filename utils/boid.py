@@ -16,12 +16,16 @@ def poly_points(pos, heading):
 
 
 class Boid:
-    boids_quad = QuadTree(pg.Rect(-100, 100, 1700, 1050))
+    boids_quad = QuadTree(pg.Rect(-100, 100, 2000, 1050))
     boids = []
+
+    speed = 10
 
     separation_factor = 0.05
     alignment_factor = 0.05
     cohesion_factor = 0.05
+    avoidance_factor = 0.1  # obstacle avoidance
+    goal_factor = 0  # 0.05
 
     turn_factor = 2
 
@@ -33,8 +37,12 @@ class Boid:
 
     edge_mode = 'turn'
 
+    boid_color = '#12bac9'
+    predator_color = 'red'
+
+    use_quadtree = True
+
     def __init__(self, pos: Vector2, predator=False):
-        self.speed = 10
         self.acc = Vector2()
         self.pos = pos.copy()
 
@@ -44,6 +52,7 @@ class Boid:
         ).normalize() * random.random() * self.speed
 
         self.trail = []
+        self.seeking_range = self.visual_range
 
         self.is_predator = predator
 
@@ -52,76 +61,100 @@ class Boid:
 
     @staticmethod
     def update_quad(screen):
-        Boid.boids_quad = QuadTree(pg.Rect(-100, -100, 1800, 1150))
+        Boid.boids_quad = QuadTree(pg.Rect(-100, -100, 2000, 1150))
 
         for boid in Boid.boids:
             Boid.boids_quad.insert(boid.pos, boid)
         # Boid.boids_quad.draw(screen)
 
-    def separation(self):
-        sep = Vector2(0, 0)
-        for _, boid in self.boids_quad.query_radius(self.pos, self.visual_range, []):
-            if (boid.pos - self.pos).length():
-                if boid == self:
-                    continue
-                if boid.is_predator and not self.is_predator:
-                    sep -= boid.pos - self.pos
-                elif (boid.pos - self.pos).length() < self.avoidance_range:
-                    sep -= boid.pos - self.pos
+    def calculate_vectors(self, goal_pos):
+        separation = Vector2()
+        alignment = Vector2()
+        cohesion = Vector2()
+        avoidance = Vector2()
+        goal = Vector2()
 
-        for _, obstacle in Obstacle.obstacles_quad.query_radius(self.pos, self.visual_range, []):
-            if (obstacle.pos - self.pos).length() < self.visual_range:
-                if obstacle.bad:
-                    sep -= obstacle.pos - self.pos
-                elif (obstacle.pos - self.pos).length() < self.avoidance_range:
-                    sep -= obstacle.pos - self.pos
-
-        return sep
-
-    def alignment(self):
-        align = Vector2()
         n = 0
-        for _, boid in self.boids_quad.query_radius(self.pos, self.visual_range, []):
+        if self.use_quadtree:
+            for _, boid in self.boids_quad.query_radius(self.pos, self.seeking_range, []):
+                if (boid.pos - self.pos).length():
+                    if boid == self:
+                        continue
+                    if boid.is_predator and not self.is_predator:
+                        separation -= boid.pos - self.pos
+                    elif (boid.pos - self.pos).length() < self.avoidance_range:
+                        separation -= boid.pos - self.pos
 
-            if not self.is_predator:
-                if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
-                    align += boid.vel
-                    n += 1
-            else:
-                if (boid.pos - self.pos).length() < self.visual_range and boid.is_predator:
-                    align += boid.vel
-                    n += 1
+                if not self.is_predator:
+                    if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
+                        cohesion += boid.pos
+                        alignment += boid.vel
+                        n += 1
+                else:
+                    if (boid.pos - self.pos).length() < self.visual_range and boid.is_predator:
+                        cohesion += boid.pos
+                        alignment += boid.vel
+                        n += 1
 
-        align /= n if n > 1 else 1
-        return align
+                goal = (goal_pos - self.pos) if self.is_predator else Vector2()
 
-    def cohesion(self):
-        center: Vector2 = Vector2(0, 0)
-        n = 0
+                if n > 4:
+                    self.seeking_range = max((self.seeking_range - 1, self.avoidance_range))
+                else:
+                    self.seeking_range = min((self.seeking_range + 1, self.visual_range))
 
-        for _, boid in self.boids_quad.query_radius(self.pos, self.visual_range, []):
+            for _, obstacle in Obstacle.obstacles_quad.query_radius(self.pos, self.visual_range, []):
+                if (obstacle.pos - self.pos).length() < self.visual_range:
+                    if obstacle.bad:
+                        avoidance -= obstacle.pos - self.pos
+                    elif (obstacle.pos - self.pos).length() < self.avoidance_range:
+                        avoidance -= obstacle.pos - self.pos
+        else:
+            for boid in self.boids:
+                if (boid.pos - self.pos).length():
+                    if boid == self:
+                        continue
+                    if boid.is_predator and not self.is_predator:
+                        separation -= boid.pos - self.pos
+                    elif (boid.pos - self.pos).length() < self.avoidance_range:
+                        separation -= boid.pos - self.pos
 
-            if not self.is_predator:
-                if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
-                    center += boid.pos
-                    n += 1
-            else:
-                if (boid.pos - self.pos).length() < self.visual_range and boid.is_predator:
-                    center += boid.pos
-                    n += 1
+                if not self.is_predator:
+                    if (boid.pos - self.pos).length() < self.visual_range and not boid.is_predator:
+                        cohesion += boid.pos
+                        alignment += boid.vel
+                        n += 1
+                else:
+                    if (boid.pos - self.pos).length() < self.visual_range and boid.is_predator:
+                        cohesion += boid.pos
+                        alignment += boid.vel
+                        n += 1
 
-        center /= n if n > 0 else 1
-        return center - self.pos
+                goal = (goal_pos - self.pos) if self.is_predator else Vector2()
 
-    def move(self):
-        separation_vector = self.separation()
-        alignment_vector = self.alignment()
-        cohesion_vector = self.cohesion()
+            for obstacle in Obstacle.obstacles:
+                if (obstacle.pos - self.pos).length() < self.visual_range:
+                    if obstacle.bad:
+                        avoidance -= obstacle.pos - self.pos
+                    elif (obstacle.pos - self.pos).length() < self.avoidance_range:
+                        avoidance -= obstacle.pos - self.pos
+
+        cohesion /= n if n > 0 else 1
+        alignment /= n if n > 1 else 1
+
+        return separation, alignment, cohesion - self.pos, avoidance, goal
+
+    def move(self, goal_pos):
+        (separation_vector, alignment_vector,
+         cohesion_vector, avoidance_vector,
+         goal_vector) = self.calculate_vectors(goal_pos)
 
         self.acc = (
                 separation_vector * self.separation_factor
                 + alignment_vector * self.alignment_factor
                 + cohesion_vector * self.cohesion_factor
+                + avoidance_vector * self.avoidance_factor
+                + goal_vector * self.goal_factor
         )
 
     def update(self):
@@ -134,17 +167,17 @@ class Boid:
                     self.acc.x += self.turn_factor
                 elif self.pos.y < 100:
                     self.acc.y += self.turn_factor
-                elif self.pos.x > 1500:
+                elif self.pos.x > 1800:
                     self.acc.x -= self.turn_factor
                 elif self.pos.y > 850:
                     self.acc.y -= self.turn_factor
 
             case 'wrap':
                 if self.pos.x < 0:
-                    self.pos.x = 1600
+                    self.pos.x = 1900
                 elif self.pos.y < 0:
                     self.pos.y = 950
-                elif self.pos.x > 1600:
+                elif self.pos.x > 1900:
                     self.pos.x = 0
                 elif self.pos.y > 950:
                     self.pos.y = 0
@@ -157,10 +190,12 @@ class Boid:
         self.trail = self.trail[-int(500 / self.speed):]
 
     def draw(self, screen):
-        pg.draw.polygon(screen, 'red' if self.is_predator else '#12bac9',
+        pg.draw.polygon(screen, self.predator_color if self.is_predator else self.boid_color,
                         poly_points(self.pos.copy(), 180 - self.vel.angle_to(Vector2(0, 1))))
         if self.do_circles:
-            pg.draw.circle(screen, 'red' if self.is_predator else '#12bac9', self.pos, self.visual_range, 1)
-            pg.draw.circle(screen, 'red' if self.is_predator else '#12bac9', self.pos, self.avoidance_range, 1)
+            pg.draw.circle(screen, self.predator_color if self.is_predator else self.boid_color, self.pos,
+                           self.seeking_range, 1)
+            pg.draw.circle(screen, self.predator_color if self.is_predator else self.boid_color, self.pos,
+                           self.avoidance_range, 1)
         if len(self.trail) >= 2 and self.do_trails:
-            pg.draw.lines(screen, 'red' if self.is_predator else '#12bac9', False, self.trail)
+            pg.draw.lines(screen, self.predator_color if self.is_predator else self.boid_color, False, self.trail)
