@@ -6,15 +6,16 @@ from utils import QuadTree
 
 class Obstacle:
     obstacles = []
-    obstacles_quad = QuadTree(pg.Rect(-100, 100, 1700, 1050))
+    obstacles_quad = QuadTree(pg.Rect(-100, 100, 2000, 1050))
 
     @staticmethod
-    def update_quad(screen):
-        Obstacle.obstacles_quad = QuadTree(pg.Rect(-100, -100, 1800, 1150))
+    def update_quad(screen, visualize):
+        Obstacle.obstacles_quad = QuadTree(pg.Rect(-100, 100, 2000, 1050))
 
         for obstacle in Obstacle.obstacles:
             Obstacle.obstacles_quad.insert(obstacle.pos, obstacle)
-        #Obstacle.obstacles_quad.draw(screen)
+        if visualize:
+            Obstacle.obstacles_quad.draw(screen, 'blue')
 
     def __init__(self, pos: Vector2, bad=False):
         self.pos = pos.copy()

@@ -25,7 +25,9 @@ class Boid:
     alignment_factor = 0.05
     cohesion_factor = 0.05
     avoidance_factor = 0.1  # obstacle avoidance
-    goal_factor = 0  # 0.05
+    goal_factor = 0.05
+
+    goal_exists = False
 
     turn_factor = 2
 
@@ -60,12 +62,13 @@ class Boid:
         self.boids_quad.insert(self.pos, self)
 
     @staticmethod
-    def update_quad(screen):
+    def update_quad(screen, visualize):
         Boid.boids_quad = QuadTree(pg.Rect(-100, -100, 2000, 1150))
 
         for boid in Boid.boids:
             Boid.boids_quad.insert(boid.pos, boid)
-        # Boid.boids_quad.draw(screen)
+        if visualize:
+            Boid.boids_quad.draw(screen, 'green')
 
     def calculate_vectors(self, goal_pos):
         separation = Vector2()
@@ -154,7 +157,7 @@ class Boid:
                 + alignment_vector * self.alignment_factor
                 + cohesion_vector * self.cohesion_factor
                 + avoidance_vector * self.avoidance_factor
-                + goal_vector * self.goal_factor
+                + goal_vector * self.goal_factor * int(self.goal_exists)
         )
 
     def update(self):

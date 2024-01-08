@@ -1,86 +1,127 @@
 import pygame as pg
-from pygame.math import Vector2
 
 from utils import Obstacle, Boid
 
 pg.font.init()
-font = pg.font.Font('Assets/Fonts/Jetbrains_Mono.ttf', 30)
 
+font_size = 28
+font = pg.font.Font('Assets/Fonts/Jetbrains_Mono.ttf', font_size)
 
-def switch(param=None, target=None):
-    match param:
-        case 'circles':
-            Boid.do_circles = not Boid.do_circles
-
-        case 'trails':
-            Boid.do_trails = not Boid.do_trails
-
-        case 'add':
-            match target:
-                case 'separation':
-                    Boid.separation_factor += 0.01
-                case 'cohesion':
-                    Boid.cohesion_factor += 0.01
-                case 'alignment':
-                    Boid.alignment_factor += 0.01
-                case 'avoidance':
-                    Boid.avoidance_factor += 0.01
-                case 'goal':
-                    Boid.goal_factor += 0.01
-
-        case 'subtract':
-            match target:
-                case 'separation':
-                    Boid.separation_factor -= 0.01
-                case 'cohesion':
-                    Boid.cohesion_factor -= 0.01
-                case 'alignment':
-                    Boid.alignment_factor -= 0.01
-                case 'avoidance':
-                    Boid.avoidance_factor -= 0.01
-                case 'goal':
-                    Boid.goal_factor -= 0.01
-
-        case _:
-            return [
-                Boid.separation_factor,
-                Boid.cohesion_factor,
-                Boid.alignment_factor,
-                Boid.avoidance_factor,
-                Boid.goal_factor
-            ]
+no_of_rows = 24
 
 
 class Ui:
+    enabled = True
+    row_height = font_size + 5
+    x = 1480
+    y = (950 - (no_of_rows*row_height))/2 - 5
+    width = 420
+
     frame_count = 0
-    info_bg = pg.Surface((450, 370), pg.SRCALPHA)
+    info_bg = pg.Surface((width + 20, 20 + row_height * no_of_rows), pg.SRCALPHA)
     info_bg.set_alpha(100)
+    pg.draw.rect(info_bg, 'black', (0, 0, width + 20, 20 + row_height * no_of_rows), 0, 10)
 
-    pg.draw.rect(info_bg, 'black', (0, 0, 450, 370), 0, 10)
+    _open = pg.Surface((50, 100), pg.SRCALPHA)
+    _close = pg.Surface((50, 100), pg.SRCALPHA)
+    _open.set_alpha(100)
+    _close.set_alpha(100)
+    close_rect = _close.get_rect(midright=(x + 2, 475))
+    open_rect = _open.get_rect(midright=(1900 + 2, 475))
 
+    collision_intercept_zones = {
+        0: [open_rect],
+        1: [pg.Rect(x, y, width + 20, 20 + row_height * no_of_rows), close_rect],
+    }
 
+    open_icon = font.render('<', True, 'white')
+    close_icon = font.render('>', True, 'white')
+    open_icon_rect = open_icon.get_rect(center=open_rect.center)
+    close_icon_rect = close_icon.get_rect(center=close_rect.center)
+
+    pg.draw.rect(_open, 'black', open_rect.move(-open_rect.x, -open_rect.y), 0, border_top_left_radius=10,
+                 border_bottom_left_radius=10)
+    pg.draw.rect(_close, 'black', close_rect.move(-close_rect.x, -close_rect.y), 0, border_top_left_radius=10,
+                 border_bottom_left_radius=10)
+
+    factor_rects = {
+        'separation': pg.Rect(x + 225, y + 8 + 9 * row_height, 180, row_height),
+        'alignment': pg.Rect(x + 225, y + 8 + 10 * row_height, 180, row_height),
+        'cohesion': pg.Rect(x + 225, y + 8 + 11 * row_height, 180, row_height),
+        'avoidance': pg.Rect(x + 225, y + 8 + 12 * row_height, 180, row_height),
+        'goal': pg.Rect(x + 225, y + 8 + 13 * row_height, 180, row_height),
+    }
+
+    toggle_rects = {
+        'quads': pg.Rect(x + 225, y + 8 + 15 * row_height, 180, row_height)
+    }
     @staticmethod
     def draw(fps, screen):
-        factors = switch()
-        lines = [
-            f'Boids     : {len([x for x in filter((lambda boid: not boid.is_predator), Boid.boids)])}',
-            f'Predators : {len([x for x in filter((lambda boid: boid.is_predator), Boid.boids)])}',
-            f'Frames    : {Ui.frame_count}',
-            f'FPS       : {fps:.0f}',
-            f'Separation Factor : {factors[0]}',
-            f'Alignment Factor  : {factors[1]}',
-            f'Cohesion Factor   : {factors[2]}',
-            f'Avoidance Factor  : {factors[3]}',
-            f'Goal Factor       : {factors[4]}',
 
+        pos = pg.mouse.get_pos()
+
+        lines = [
+            f'Boids      : {len([x for x in filter((lambda boid: not boid.is_predator), Boid.boids)]):>10}',
+            f'Predators  : {len([x for x in filter((lambda boid: boid.is_predator), Boid.boids)]):>10}',
+            f'Obstacles  : {len([x for x in filter((lambda obstacle: not obstacle.bad), Obstacle.obstacles)]):>10}',
+            f'Bad Obs..  : {len([x for x in filter((lambda obstacle: obstacle.bad), Obstacle.obstacles)]):>10}',
+            '',
+            '.click',
+            '.boundries',
+            '.debugger',
+            '',
+            f'Separation : <{Boid.separation_factor:^8.2f}>',
+            f'Alignment  : <{Boid.alignment_factor:^8.2f}>',
+            f'Cohesion   : <{Boid.cohesion_factor:^8.2f}>',
+            f'Avoidance  : <{Boid.avoidance_factor:^8.2f}>',
+            f'Goal       : <{Boid.goal_factor:^8.2f}>',
+            '',
+            # f'QuadTrees  : {"Enabled" if Boid.use_quadtree else "Disabled":^10}',
+            f'QuadTrees  :',
+            'Show oQuads:  ',
+            'Show bQuads:  ',
+            '',
+            f'Frames     : {Ui.frame_count:>10}',
+            f'FPS        : {fps:>10.0f}',
+            '.fps-limiter',  # '30 | 60 | ∞',
+            '',
+            '.play-pause'
 
         ]
 
-        #pg.draw.rect(screen, 'black', (1395, 20, 450, 370), 0, 10)
-        for i, line in enumerate(lines):
-            label = font.render(line, True, 'white')
-            rect = label.get_rect(topleft=(1405, 25 + i * 40))
+        if Ui.enabled:
+            screen.blit(Ui.info_bg, (Ui.x, Ui.y))
+            pg.draw.rect(screen, 'white', (Ui.x, Ui.y, Ui.width + 20, 20 + Ui.row_height * no_of_rows), 2, 10)
 
-            screen.blit(label, rect)
+            for rect in Ui.factor_rects.values():
+                pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+
+                if rect.collidepoint(pos):
+                    pg.draw.rect(screen, '#12bac9', rect.inflate(-6, -6), 2, 10)
+
+            for id, rect in Ui.toggle_rects.items():
+                match id:
+                    case 'quads':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        if Boid.use_quadtree:
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
+
+            for i, line in enumerate(lines):
+                if line == '':
+                    pg.draw.line(screen, 'white', (Ui.x, Ui.y + (Ui.row_height + 10)/2 + i * Ui.row_height), (Ui.x + Ui.width, Ui.y + (Ui.row_height + 10)/2 + i * Ui.row_height), 2)
+                else:
+                    label = font.render(line, True, 'white')
+                    rect = label.get_rect(topleft=(Ui.x + 10, Ui.y + 5 + i * Ui.row_height))
+                    screen.blit(label, rect)
+
+            screen.blit(Ui._close, Ui.close_rect)
+            pg.draw.rect(screen, 'white', Ui.close_rect, 2, border_top_left_radius=10,
+                         border_bottom_left_radius=10)
+            screen.blit(Ui.close_icon, Ui.close_icon_rect)
+        else:
+            screen.blit(Ui._open, Ui.open_rect)
+            pg.draw.rect(screen, 'white', Ui.open_rect, 2, border_top_left_radius=10,
+                         border_bottom_left_radius=10)
+            screen.blit(Ui.open_icon, Ui.open_icon_rect)
 
         Ui.frame_count += 1

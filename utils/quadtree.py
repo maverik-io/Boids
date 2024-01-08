@@ -3,27 +3,19 @@ from pygame import Rect, Vector2
 
 
 class QuadTree:
-    """A class implementing a quadtree."""
-
     def __init__(self, boundary: Rect, max_points=4, depth=0):
-        """Initialize this node of the quadtree.
-
-        boundary is a Rect object defining the region from which points are
-        placed into this node; max_points is the maximum number of points the
-        node can hold before it must divide (branch into four more nodes);
-        depth keeps track of how deep into the quadtree this node lies.
-
-        """
-
         self.boundary = boundary
         self.max_points = max_points
         self.points = []
         self.depth = depth
-        # A flag to indicate whether this node has divided (branched) or not.
         self.divided = False
 
+        self.ne = None
+        self.nw = None
+        self.se = None
+        self.sw = None
+
     def __str__(self):
-        """Return a string representation of this node, suitably formatted."""
         sp = ' ' * self.depth * 2
         s = str(self.boundary) + '\n'
         s += sp + ', '.join(str(point) for point in self.points)
@@ -34,16 +26,11 @@ class QuadTree:
             sp + 'se: ' + str(self.se), sp + 'sw: ' + str(self.sw)])
 
     def divide(self):
-        """Divide (branch) this node by spawning four children nodes."""
-
         cx, cy = self.boundary.center[0], self.boundary.center[1]
         w, h = self.boundary.width / 2, self.boundary.height / 2
-        # The boundaries of the four children nodes are "northwest",
-        # "northeast", "southeast" and "southwest" quadrants within the
-        # boundary of the current node.
         self.nw = QuadTree(Rect(cx - w, cy - h, w, h),
                            self.max_points, self.depth + 1)
-        self.ne = QuadTree(Rect(cx , cy - h, w, h),
+        self.ne = QuadTree(Rect(cx, cy - h, w, h),
                            self.max_points, self.depth + 1)
         self.se = QuadTree(Rect(cx, cy, w, h),
                            self.max_points, self.depth + 1)
@@ -52,38 +39,24 @@ class QuadTree:
         self.divided = True
 
     def insert(self, point: Vector2, data):
-        """Try to insert Point into this QuadTree."""
-
         if not self.boundary.collidepoint(point):
-            # The point does not lie inside boundary: bail.
             return False
         if len(self.points) < self.max_points:
-            # There's room for our point without dividing the QuadTree.
             self.points.append((point, data))
             return True
-
-        # No room: divide if necessary, then try the sub-quads.
         if not self.divided:
             self.divide()
-
         return (self.ne.insert(point, data) or
                 self.nw.insert(point, data) or
                 self.se.insert(point, data) or
                 self.sw.insert(point, data))
 
     def query(self, boundary, found_points):
-        """Find the points in the quadtree that lie within boundary."""
-
         if not self.boundary.colliderect(boundary):
-            # If the domain of this node does not intersect the search
-            # region, we don't need to look in it for points.
             return False
-
-        # Search this node's points to see if they lie within boundary ...
         for point in self.points:
             if boundary.collidepoint(point[0]):
                 found_points.append(point)
-        # ... and if this node has children, search them too.
         if self.divided:
             self.nw.query(boundary, found_points)
             self.ne.query(boundary, found_points)
@@ -92,27 +65,13 @@ class QuadTree:
         return found_points
 
     def query_circle(self, boundary, centre, radius, found_points):
-        """Find the points in the quadtree that lie within radius of centre.
-
-        boundary is a Rect object (a square) that bounds the search circle.
-        There is no need to call this method directly: use query_radius.
-
-        """
-
         if not self.boundary.colliderect(boundary):
-            # If the domain of this node does not intersect the search
-            # region, we don't need to look in it for points.
             return []
-
-        # Search this node's points to see if they lie within boundary
-        # and also lie within a circle of given radius around the centre point.
         for point in self.points:
             point_pos = point[0]
             if (boundary.collidepoint(point_pos) and
                     point_pos.distance_to(centre) <= radius):
                 found_points.append(point)
-
-        # Recurse the search into this node's children.
         if self.divided:
             self.nw.query_circle(boundary, centre, radius, found_points)
             self.ne.query_circle(boundary, centre, radius, found_points)
@@ -121,15 +80,10 @@ class QuadTree:
         return found_points
 
     def query_radius(self, centre, radius, found_points):
-        """Find the points in the quadtree that lie within radius of centre."""
-
-        # First find the square that bounds the search circle as a Rect object.
-        boundary = Rect(centre.x-radius, centre.y-radius, 2 * radius, 2 * radius)
+        boundary = Rect(centre.x - radius, centre.y - radius, 2 * radius, 2 * radius)
         return self.query_circle(boundary, centre, radius, found_points)
 
     def __len__(self):
-        """Return the number of points in the quadtree."""
-
         no_of_points = len(self.points)
         if self.divided:
             no_of_points += len(self.nw) + len(self.ne) + len(self.se) + len(self.sw)
@@ -137,16 +91,14 @@ class QuadTree:
 
     def get_rects(self, rects):
         rects.append(self.boundary)
-        rects.extend([Rect(boid[0][0]-5, boid[0][1]-5, 10, 10) for boid in self.points])
+        rects.extend([Rect(boid[0][0] - 5, boid[0][1] - 5, 10, 10) for boid in self.points])
         if self.divided:
             self.ne.get_rects(rects)
             self.nw.get_rects(rects)
             self.se.get_rects(rects)
             self.sw.get_rects(rects)
-
         return rects
 
-    def draw(self, screen):
+    def draw(self, screen, color):
         for rect in self.get_rects([]):
-            pg.draw.rect(screen, 'red', rect, 2)
-
+            pg.draw.rect(screen, color, rect, 2)
