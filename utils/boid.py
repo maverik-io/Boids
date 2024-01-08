@@ -16,7 +16,7 @@ def poly_points(pos, heading):
 
 
 class Boid:
-    boids_quad = QuadTree(pg.Rect(-100, 100, 2000, 1050))
+    boids_quad = QuadTree(pg.Rect(-100, -100, 2100, 1150))
     boids = []
 
     speed = 10
@@ -63,7 +63,7 @@ class Boid:
 
     @staticmethod
     def update_quad(screen, visualize):
-        Boid.boids_quad = QuadTree(pg.Rect(-100, -100, 2000, 1150))
+        Boid.boids_quad = QuadTree(pg.Rect(-100, -100, 2100, 1150))
 
         for boid in Boid.boids:
             Boid.boids_quad.insert(boid.pos, boid)

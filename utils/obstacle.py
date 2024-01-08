@@ -6,11 +6,11 @@ from utils import QuadTree
 
 class Obstacle:
     obstacles = []
-    obstacles_quad = QuadTree(pg.Rect(-100, 100, 2000, 1050))
+    obstacles_quad = QuadTree(pg.Rect(-100, -100, 2100, 1150))
 
     @staticmethod
     def update_quad(screen, visualize):
-        Obstacle.obstacles_quad = QuadTree(pg.Rect(-100, 100, 2000, 1050))
+        Obstacle.obstacles_quad = QuadTree(pg.Rect(-100, -100, 2100, 1150))
 
         for obstacle in Obstacle.obstacles:
             Obstacle.obstacles_quad.insert(obstacle.pos, obstacle)

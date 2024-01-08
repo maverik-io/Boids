@@ -53,10 +53,14 @@ class Ui:
     }
 
     toggle_rects = {
-        'quads': pg.Rect(x + 225, y + 8 + 15 * row_height, 180, row_height)
+        'quads': pg.Rect(x + 225, y + 8 + 15 * row_height, 180, row_height),
+        'oquads': pg.Rect(x + 225, y + 8 + 16 * row_height, 180, row_height),
+        'bquads': pg.Rect(x + 225, y + 8 + 17 * row_height, 180, row_height),
+        'circles': pg.Rect(x + 335, y + 8 + 7 * row_height, 80, row_height),
+        'trails': pg.Rect(x + 135, y + 8 + 7 * row_height, 80, row_height),
     }
     @staticmethod
-    def draw(fps, screen):
+    def draw(fps, screen, o, b):
 
         pos = pg.mouse.get_pos()
 
@@ -68,7 +72,7 @@ class Ui:
             '',
             '.click',
             '.boundries',
-            '.debugger',
+            'Trails:      Radii:',
             '',
             f'Separation : <{Boid.separation_factor:^8.2f}>',
             f'Alignment  : <{Boid.alignment_factor:^8.2f}>',
@@ -104,6 +108,22 @@ class Ui:
                     case 'quads':
                         pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
                         if Boid.use_quadtree:
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
+                    case 'oquads':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        if o:
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
+                    case 'bquads':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        if b:
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
+                    case 'trails':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        if Boid.do_trails:
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
+                    case 'circles':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        if Boid.do_circles:
                             pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
 
             for i, line in enumerate(lines):

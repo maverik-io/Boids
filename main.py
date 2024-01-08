@@ -76,7 +76,22 @@ while True:
                                 case 'quads':
                                     if value.collidepoint(event.pos):
                                         Boid.use_quadtree = not Boid.use_quadtree
-                                        print('click')
+                                        if not Boid.use_quadtree:
+                                            o_visualize = False
+                                            b_visualize = False
+                                case 'oquads':
+                                    if value.collidepoint(event.pos):
+                                        o_visualize = not o_visualize if Boid.use_quadtree else False
+                                case 'bquads':
+                                    if value.collidepoint(event.pos):
+                                        b_visualize = not b_visualize if Boid.use_quadtree else False
+                                case 'trails':
+                                    if value.collidepoint(event.pos):
+                                        Boid.do_trails = not Boid.do_trails
+                                case 'circles':
+                                    if value.collidepoint(event.pos):
+                                        Boid.do_circles = not Boid.do_circles
+
                     else:
                         if Ui.open_rect.collidepoint(event.pos):
                             Ui.enabled = True
@@ -155,9 +170,9 @@ while True:
         if timer > 1:
             rays.remove(ray)
 
-    Ui.draw(clock.get_fps(), screen)
+    Ui.draw(clock.get_fps(), screen, o_visualize, b_visualize)
 
-    pg.draw.circle(screen,'white', pg.mouse.get_pos(), 10, 4)
+    pg.draw.circle(screen, 'white', pg.mouse.get_pos(), 10, 4)
 
     pg.display.update()
     clock.tick(0)
