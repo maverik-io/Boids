@@ -99,7 +99,7 @@ class Boid:
                         alignment += boid.vel
                         n += 1
 
-                goal = (goal_pos - self.pos) if self.is_predator else Vector2()
+                goal = (goal_pos - self.pos).normalize() * 2 * self.speed if (goal_pos - self.pos).length() > self.visual_range else Vector2()
 
                 if n > 4:
                     self.seeking_range = max((self.seeking_range - 1, self.avoidance_range))
@@ -157,7 +157,7 @@ class Boid:
                 + alignment_vector * self.alignment_factor
                 + cohesion_vector * self.cohesion_factor
                 + avoidance_vector * self.avoidance_factor
-                + goal_vector * self.goal_factor * int(self.goal_exists)
+                + goal_vector * self.goal_factor * int(self.goal_exists) * int(self.is_predator)
         )
 
     def update(self):
@@ -189,8 +189,11 @@ class Boid:
         self.vel = self.vel.normalize() * self.speed if self.vel.length() > self.speed else self.vel
         self.pos += self.vel
 
-        self.trail.append(self.pos.copy())
-        self.trail = self.trail[-int(500 / self.speed):]
+        if self.do_trails:
+            self.trail.append(self.pos.copy())
+            self.trail = self.trail[-int(500 / self.speed):]
+        else:
+            self.trail = []
 
     def draw(self, screen):
         pg.draw.polygon(screen, self.predator_color if self.is_predator else self.boid_color,

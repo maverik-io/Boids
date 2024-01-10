@@ -52,15 +52,20 @@ class Ui:
         'goal': pg.Rect(x + 225, y + 8 + 13 * row_height, 180, row_height),
     }
 
-    toggle_rects = {
+    toggle_binary_rects = {
         'quads': pg.Rect(x + 225, y + 8 + 15 * row_height, 180, row_height),
         'oquads': pg.Rect(x + 225, y + 8 + 16 * row_height, 180, row_height),
         'bquads': pg.Rect(x + 225, y + 8 + 17 * row_height, 180, row_height),
         'circles': pg.Rect(x + 335, y + 8 + 7 * row_height, 80, row_height),
         'trails': pg.Rect(x + 135, y + 8 + 7 * row_height, 80, row_height),
     }
+
+    toggle_state_rects = {
+        'click': pg.Rect(x + 225, y + 8 + 5 * row_height, 180, row_height),
+        'boundary': pg.Rect(x + 225, y + 8 + 6 * row_height, 180, row_height),
+    }
     @staticmethod
-    def draw(fps, screen, o, b):
+    def draw(fps, screen, o, b, add_mode, goal_pos):
 
         pos = pg.mouse.get_pos()
 
@@ -70,7 +75,7 @@ class Ui:
             f'Obstacles  : {len([x for x in filter((lambda obstacle: not obstacle.bad), Obstacle.obstacles)]):>10}',
             f'Bad Obs..  : {len([x for x in filter((lambda obstacle: obstacle.bad), Obstacle.obstacles)]):>10}',
             '',
-            '.click',
+            'Click      :',
             '.boundries',
             'Trails:      Radii:',
             '',
@@ -103,8 +108,8 @@ class Ui:
                 if rect.collidepoint(pos):
                     pg.draw.rect(screen, '#12bac9', rect.inflate(-6, -6), 2, 10)
 
-            for id, rect in Ui.toggle_rects.items():
-                match id:
+            for name, rect in Ui.toggle_binary_rects.items():
+                match name:
                     case 'quads':
                         pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
                         if Boid.use_quadtree:
@@ -125,6 +130,26 @@ class Ui:
                         pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
                         if Boid.do_circles:
                             pg.draw.rect(screen, '#12bac9', rect.inflate(-14, -14), 0, 5)
+            for name, rect in Ui.toggle_state_rects.items():
+                match name:
+                    case 'click':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        txt = font.render(add_mode.title(), True, 'white')
+                        txt_rect = txt.get_rect(center=rect.center)
+
+                        screen.blit(txt, txt_rect)
+
+                        if rect.collidepoint(pos):
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-6, -6), 2, 10)
+                    case 'boundary':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
+                        txt = font.render(Boid.edge_mode.title(), True, 'white')
+                        txt_rect = txt.get_rect(center=rect.center)
+
+                        screen.blit(txt, txt_rect)
+
+                        if rect.collidepoint(pos):
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-6, -6), 2, 10)
 
             for i, line in enumerate(lines):
                 if line == '':
@@ -143,5 +168,8 @@ class Ui:
             pg.draw.rect(screen, 'white', Ui.open_rect, 2, border_top_left_radius=10,
                          border_bottom_left_radius=10)
             screen.blit(Ui.open_icon, Ui.open_icon_rect)
+
+        if Boid.goal_exists:
+            pg.draw.circle(screen, 'green', goal_pos, 10, 2)
 
         Ui.frame_count += 1

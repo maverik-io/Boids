@@ -6,16 +6,6 @@ from pygame.math import Vector2
 from utils import Boid, Obstacle, Ui
 
 
-def debug(*nums):
-    nums = [str(num) for num in nums]
-    txt = '|'.join(nums)
-
-    label = pg.font.Font('Assets/Fonts/Jetbrains_Mono.ttf', 40).render(txt, True, 'white')
-    rect = label.get_rect(topleft=(0, 0))
-
-    screen.blit(label, rect)
-
-
 def update(boid):
     boid.move(goal_pos)
     boid.update()
@@ -28,22 +18,26 @@ pg.display.set_caption('Boids')
 pg.mouse.set_visible(False)
 clock = pg.time.Clock()
 
-number_of_boids = 100
-number_of_predator_boids = 0
+number_of_boids = 0
+number_of_predator_boids = 10
+
 add_mode = 'boid'
+
 b_visualize = False
 o_visualize = False
+
+click_adds = ['boid', 'predator', 'obstacle', 'stink', 'control']
+boundary_modes = ['turn', 'wrap']
 
 goal_pos = Vector2()
 
 rays = []
 
-
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), False) for _ in range(number_of_boids)]
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), True) for _ in range(number_of_predator_boids)]
 
 # [Obstacle(Vector2(random.randint(0, 1600), random.randint(0, 950)), not (_ % 3)) for _ in range(50)]
-
+Ui.info_bg = Ui.info_bg.convert_alpha()
 
 while True:
     for event in pg.event.get():
@@ -60,18 +54,23 @@ while True:
                     if allowed:
                         if add_mode == 'boid':
                             Boid(Vector2(*event.pos))
+
                         elif add_mode == 'predator':
                             Boid(Vector2(*event.pos), True)
                         elif add_mode == 'obstacle':
                             Obstacle(Vector2(*event.pos))
-                        elif add_mode == 'bad_obstacle':
+                        elif add_mode == 'stink':
                             Obstacle(Vector2(*event.pos), True)
+                        elif add_mode == 'control':
+                            goal_pos = Vector2(*event.pos)
+                            Boid.goal_exists = True
+                            
 
                     if Ui.enabled:
                         if Ui.close_rect.collidepoint(event.pos):
                             Ui.enabled = False
 
-                        for key, value in Ui.toggle_rects.items():
+                        for key, value in Ui.toggle_binary_rects.items():
                             match key:
                                 case 'quads':
                                     if value.collidepoint(event.pos):
@@ -96,17 +95,16 @@ while True:
                         if Ui.open_rect.collidepoint(event.pos):
                             Ui.enabled = True
 
+                    for key, value in Ui.toggle_state_rects.items():
+                        match key:
+                            case 'click':
+                                if value.collidepoint(event.pos):
+                                    add_mode = click_adds[(click_adds.index(add_mode) + 1) % len(click_adds)]
+                                    Boid.goal_exists = False
+                            case 'boundary':
+                                if value.collidepoint(event.pos):
+                                    Boid.edge_mode = boundary_modes[(boundary_modes.index(Boid.edge_mode) + 1) % len(boundary_modes)]
 
-
-                case 2:
-                    if add_mode == 'obstacle':
-                        add_mode = 'boid'
-                    elif add_mode == 'boid':
-                        add_mode = 'predator'
-                    elif add_mode == 'predator':
-                        add_mode = 'bad_obstacle'
-                    elif add_mode == 'bad_obstacle':
-                        add_mode = 'obstacle'
                 case 3:
                     shortest_distance = 10000000
                     obj = None
@@ -160,8 +158,6 @@ while True:
     Obstacle.update_quad(screen, o_visualize)
     [obstacle.draw(screen) for obstacle in Obstacle.obstacles]
 
-    debug(f'{clock.get_fps():.0f}', len(Boid.boids), f'Current: {add_mode}')
-
     i = 0
     for ray in rays.copy():
         start, end, timer = ray
@@ -170,7 +166,7 @@ while True:
         if timer > 1:
             rays.remove(ray)
 
-    Ui.draw(clock.get_fps(), screen, o_visualize, b_visualize)
+    Ui.draw(clock.get_fps(), screen, o_visualize, b_visualize, add_mode, goal_pos)
 
     pg.draw.circle(screen, 'white', pg.mouse.get_pos(), 10, 4)
 
