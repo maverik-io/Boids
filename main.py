@@ -19,7 +19,7 @@ pg.mouse.set_visible(False)
 clock = pg.time.Clock()
 
 number_of_boids = 0
-number_of_predator_boids = 10
+number_of_predator_boids = 0
 
 add_mode = 'boid'
 
@@ -27,7 +27,10 @@ b_visualize = False
 o_visualize = False
 
 click_adds = ['boid', 'predator', 'obstacle', 'stink', 'control']
-boundary_modes = ['turn', 'wrap']
+boundary_modes = ['turn', 'wrap', 'reflect']
+fps_limits = ['∞', '30', '60']
+
+fps_limit = '30'
 
 goal_pos = Vector2()
 
@@ -64,7 +67,7 @@ while True:
                         elif add_mode == 'control':
                             goal_pos = Vector2(*event.pos)
                             Boid.goal_exists = True
-                            
+                            Boid.goal_polarity = 1
 
                     if Ui.enabled:
                         if Ui.close_rect.collidepoint(event.pos):
@@ -103,21 +106,56 @@ while True:
                                     Boid.goal_exists = False
                             case 'boundary':
                                 if value.collidepoint(event.pos):
-                                    Boid.edge_mode = boundary_modes[(boundary_modes.index(Boid.edge_mode) + 1) % len(boundary_modes)]
-
+                                    Boid.edge_mode = boundary_modes[
+                                        (boundary_modes.index(Boid.edge_mode) + 1) % len(boundary_modes)]
+                            case 'fps':
+                                if value.collidepoint(event.pos):
+                                    fps_limit = fps_limits[
+                                        (fps_limits.index(fps_limit) + 1) % len(fps_limits)]
                 case 3:
                     shortest_distance = 10000000
                     obj = None
                     match add_mode:
                         case 'boid':
                             for boid in Boid.boids:
-                                if (Vector2(*event.pos) - boid.pos).length() < shortest_distance:
+                                if (Vector2(*event.pos) - boid.pos).length() < shortest_distance and not boid.is_predator:
                                     shortest_distance = (Vector2(*event.pos) - boid.pos).length()
                                     obj = boid
 
                             if obj is not None:
                                 rays.append([event.pos, obj.pos, 0])
                                 Boid.boids.remove(obj)
+                        case 'predator':
+                            for boid in Boid.boids:
+                                if (Vector2(*event.pos) - boid.pos).length() < shortest_distance and boid.is_predator:
+                                    shortest_distance = (Vector2(*event.pos) - boid.pos).length()
+                                    obj = boid
+
+                            if obj is not None:
+                                rays.append([event.pos, obj.pos, 0])
+                                Boid.boids.remove(obj)
+                        case 'obstacle':
+                            for obstacle in Obstacle.obstacles:
+                                if (Vector2(*event.pos) - obstacle.pos).length() < shortest_distance and not obstacle.bad:
+                                    shortest_distance = (Vector2(*event.pos) - obstacle.pos).length()
+                                    obj = obstacle
+
+                            if obj is not None:
+                                rays.append([event.pos, obj.pos, 0])
+                                Obstacle.obstacles.remove(obj)
+                        case 'stink':
+                            for obstacle in Obstacle.obstacles:
+                                if (Vector2(*event.pos) - obstacle.pos).length() < shortest_distance and obstacle.bad:
+                                    shortest_distance = (Vector2(*event.pos) - obstacle.pos).length()
+                                    obj = obstacle
+
+                            if obj is not None:
+                                rays.append([event.pos, obj.pos, 0])
+                                Obstacle.obstacles.remove(obj)
+                        case 'control':
+                            goal_pos = Vector2(*event.pos)
+                            Boid.goal_exists = True
+                            Boid.goal_polarity = -1
 
                 case 4:
                     if Ui.enabled:
@@ -166,9 +204,9 @@ while True:
         if timer > 1:
             rays.remove(ray)
 
-    Ui.draw(clock.get_fps(), screen, o_visualize, b_visualize, add_mode, goal_pos)
+    Ui.draw(clock.get_fps(), screen, o_visualize, b_visualize, add_mode, goal_pos, fps_limit)
 
     pg.draw.circle(screen, 'white', pg.mouse.get_pos(), 10, 4)
 
     pg.display.update()
-    clock.tick(0)
+    clock.tick(0 if fps_limit == '∞' else int(fps_limit))

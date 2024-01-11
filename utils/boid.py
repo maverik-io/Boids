@@ -25,9 +25,10 @@ class Boid:
     alignment_factor = 0.05
     cohesion_factor = 0.05
     avoidance_factor = 0.1  # obstacle avoidance
-    goal_factor = 0.05
 
+    goal_factor = 0.05
     goal_exists = False
+    goal_polarity = 1
 
     turn_factor = 2
 
@@ -157,14 +158,11 @@ class Boid:
                 + alignment_vector * self.alignment_factor
                 + cohesion_vector * self.cohesion_factor
                 + avoidance_vector * self.avoidance_factor
-                + goal_vector * self.goal_factor * int(self.goal_exists) * int(self.is_predator)
+                + goal_vector * self.goal_factor * int(self.goal_exists) * int(self.is_predator) * self.goal_polarity
         )
 
     def update(self):
         match self.edge_mode:
-            case 'reflect':
-                pass
-
             case 'turn':
                 if self.pos.x < 100:
                     self.acc.x += self.turn_factor
@@ -186,6 +184,21 @@ class Boid:
                     self.pos.y = 0
 
         self.vel += self.acc
+
+        if Boid.edge_mode == 'reflect':
+            if self.pos.x < 0:
+                self.pos.x = 2
+                self.vel.x = -self.vel.x
+            elif self.pos.y < 0:
+                self.pos.y = 2
+                self.vel.y = -self.vel.y
+            elif self.pos.x > 1900:
+                self.pos.x = 1898
+                self.vel.x = -self.vel.x
+            elif self.pos.y > 950:
+                self.pos.y = 948
+                self.vel.y = -self.vel.y
+
         self.vel = self.vel.normalize() * self.speed if self.vel.length() > self.speed else self.vel
         self.pos += self.vel
 

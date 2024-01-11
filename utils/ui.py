@@ -63,9 +63,10 @@ class Ui:
     toggle_state_rects = {
         'click': pg.Rect(x + 225, y + 8 + 5 * row_height, 180, row_height),
         'boundary': pg.Rect(x + 225, y + 8 + 6 * row_height, 180, row_height),
+        'fps': pg.Rect(x + 225, y + 8 + 21 * row_height, 180, row_height),
     }
     @staticmethod
-    def draw(fps, screen, o, b, add_mode, goal_pos):
+    def draw(fps, screen, o, b, add_mode, goal_pos, fps_limit):
 
         pos = pg.mouse.get_pos()
 
@@ -92,7 +93,7 @@ class Ui:
             '',
             f'Frames     : {Ui.frame_count:>10}',
             f'FPS        : {fps:>10.0f}',
-            '.fps-limiter',  # '30 | 60 | ∞',
+            'FPS Limit  :',  # '30 | 60 | ∞',
             '',
             '.play-pause'
 
@@ -151,6 +152,16 @@ class Ui:
                         if rect.collidepoint(pos):
                             pg.draw.rect(screen, '#12bac9', rect.inflate(-6, -6), 2, 10)
 
+                    case 'fps':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-3, 0), 0, 10)
+                        txt = font.render(fps_limit, True, 'white')
+                        txt_rect = txt.get_rect(center=rect.center)
+
+                        screen.blit(txt, txt_rect)
+
+                        if rect.collidepoint(pos):
+                            pg.draw.rect(screen, '#12bac9', rect.inflate(-3, 0), 2, 10)
+
             for i, line in enumerate(lines):
                 if line == '':
                     pg.draw.line(screen, 'white', (Ui.x, Ui.y + (Ui.row_height + 10)/2 + i * Ui.row_height), (Ui.x + Ui.width, Ui.y + (Ui.row_height + 10)/2 + i * Ui.row_height), 2)
@@ -170,6 +181,6 @@ class Ui:
             screen.blit(Ui.open_icon, Ui.open_icon_rect)
 
         if Boid.goal_exists:
-            pg.draw.circle(screen, 'green', goal_pos, 10, 2)
+            pg.draw.circle(screen, 'green' if Boid.goal_polarity > 0 else 'red', goal_pos, 10, 2)
 
         Ui.frame_count += 1
