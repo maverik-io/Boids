@@ -1,4 +1,5 @@
 import random
+
 import pygame as pg
 from pygame.math import Vector2
 
@@ -100,7 +101,8 @@ class Boid:
                         alignment += boid.vel
                         n += 1
 
-                goal = (goal_pos - self.pos).normalize() * 2 * self.speed if (goal_pos - self.pos).length() > self.visual_range else Vector2()
+                goal = (goal_pos - self.pos).normalize() * 2 * self.speed if (
+                                                                                         goal_pos - self.pos).length() > self.visual_range else Vector2()
 
                 if n > 4:
                     self.seeking_range = max((self.seeking_range - 1, self.avoidance_range))

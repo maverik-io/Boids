@@ -14,7 +14,7 @@ class Ui:
     enabled = True
     row_height = font_size + 5
     x = 1480
-    y = (950 - (no_of_rows*row_height))/2 - 5
+    y = (950 - (no_of_rows * row_height)) / 2 - 5
     width = 420
 
     frame_count = 0
@@ -65,6 +65,7 @@ class Ui:
         'boundary': pg.Rect(x + 225, y + 8 + 6 * row_height, 180, row_height),
         'fps': pg.Rect(x + 225, y + 8 + 21 * row_height, 180, row_height),
     }
+
     @staticmethod
     def draw(fps, screen, o, b, add_mode, goal_pos, fps_limit):
 
@@ -77,7 +78,7 @@ class Ui:
             f'Bad Obs..  : {len([x for x in filter((lambda obstacle: obstacle.bad), Obstacle.obstacles)]):>10}',
             '',
             'Click      :',
-            '.boundries',
+            'Boundaries :',
             'Trails:      Radii:',
             '',
             f'Separation : <{Boid.separation_factor:^8.2f}>',
@@ -164,7 +165,8 @@ class Ui:
 
             for i, line in enumerate(lines):
                 if line == '':
-                    pg.draw.line(screen, 'white', (Ui.x, Ui.y + (Ui.row_height + 10)/2 + i * Ui.row_height), (Ui.x + Ui.width, Ui.y + (Ui.row_height + 10)/2 + i * Ui.row_height), 2)
+                    pg.draw.line(screen, 'white', (Ui.x, Ui.y + (Ui.row_height + 10) / 2 + i * Ui.row_height),
+                                 (Ui.x + Ui.width, Ui.y + (Ui.row_height + 10) / 2 + i * Ui.row_height), 2)
                 else:
                     label = font.render(line, True, 'white')
                     rect = label.get_rect(topleft=(Ui.x + 10, Ui.y + 5 + i * Ui.row_height))
@@ -182,5 +184,3 @@ class Ui:
 
         if Boid.goal_exists:
             pg.draw.circle(screen, 'green' if Boid.goal_polarity > 0 else 'red', goal_pos, 10, 2)
-
-        Ui.frame_count += 1

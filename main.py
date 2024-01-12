@@ -1,14 +1,17 @@
 import random
-import pygame as pg
 from sys import exit
+
+import pygame as pg
 from pygame.math import Vector2
 
 from utils import Boid, Obstacle, Ui
 
 
 def update(boid):
-    boid.move(goal_pos)
-    boid.update()
+    if not paused or next_frame:
+        boid.move(goal_pos)
+        boid.update()
+
     boid.draw(screen)
 
 
@@ -35,6 +38,9 @@ fps_limit = '30'
 goal_pos = Vector2()
 
 rays = []
+
+paused = False
+next_frame = False
 
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), False) for _ in range(number_of_boids)]
 [Boid(Vector2(random.randint(0, 1600), random.randint(0, 950)), True) for _ in range(number_of_predator_boids)]
@@ -112,13 +118,17 @@ while True:
                                 if value.collidepoint(event.pos):
                                     fps_limit = fps_limits[
                                         (fps_limits.index(fps_limit) + 1) % len(fps_limits)]
+                case 2:
+                    paused = not paused
+
                 case 3:
                     shortest_distance = 10000000
                     obj = None
                     match add_mode:
                         case 'boid':
                             for boid in Boid.boids:
-                                if (Vector2(*event.pos) - boid.pos).length() < shortest_distance and not boid.is_predator:
+                                if (
+                                        Vector2(*event.pos) - boid.pos).length() < shortest_distance and not boid.is_predator:
                                     shortest_distance = (Vector2(*event.pos) - boid.pos).length()
                                     obj = boid
 
@@ -136,7 +146,8 @@ while True:
                                 Boid.boids.remove(obj)
                         case 'obstacle':
                             for obstacle in Obstacle.obstacles:
-                                if (Vector2(*event.pos) - obstacle.pos).length() < shortest_distance and not obstacle.bad:
+                                if (
+                                        Vector2(*event.pos) - obstacle.pos).length() < shortest_distance and not obstacle.bad:
                                     shortest_distance = (Vector2(*event.pos) - obstacle.pos).length()
                                     obj = obstacle
 
@@ -188,13 +199,22 @@ while True:
                                         Boid.avoidance_factor = min((Boid.avoidance_factor + 0.01, 1))
                                     case 'goal':
                                         Boid.goal_factor = min((Boid.goal_factor + 0.01, 1))
-
+        elif event.type == pg.KEYDOWN:
+            match event.key:
+                case pg.K_SPACE:
+                    paused = not paused
+                case pg.K_PERIOD:
+                    next_frame = True
     screen.fill('#444444')
 
     Boid.update_quad(screen, b_visualize)
     [update(boid) for boid in Boid.boids]
     Obstacle.update_quad(screen, o_visualize)
     [obstacle.draw(screen) for obstacle in Obstacle.obstacles]
+
+    if not paused or next_frame:
+        Ui.frame_count += 1
+        next_frame = False
 
     i = 0
     for ray in rays.copy():
