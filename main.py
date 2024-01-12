@@ -47,6 +47,10 @@ next_frame = False
 
 # [Obstacle(Vector2(random.randint(0, 1600), random.randint(0, 950)), not (_ % 3)) for _ in range(50)]
 Ui.info_bg = Ui.info_bg.convert_alpha()
+Ui.play_img = Ui.play_img.convert_alpha()
+Ui.pause_img = Ui.pause_img.convert_alpha()
+Ui.reset_img = Ui.reset_img.convert_alpha()
+Ui.next_img = Ui.next_img.convert_alpha()
 
 while True:
     for event in pg.event.get():
@@ -118,8 +122,27 @@ while True:
                                 if value.collidepoint(event.pos):
                                     fps_limit = fps_limits[
                                         (fps_limits.index(fps_limit) + 1) % len(fps_limits)]
+
+                    for key, value in Ui.button_rects.items():
+                        match key:
+                            case 'reset':
+                                if value.collidepoint(event.pos):
+                                    Boid.boids = []
+                                    Obstacle.obstacles = []
+                                    Ui.frame_count = 0
+
+                            case 'playpause':
+                                if value.collidepoint(event.pos):
+                                    paused = not paused
+                                    Ui.paused = paused
+
+                            case 'next':
+                                if value.collidepoint(event.pos) and paused:
+                                    next_frame = True
+
                 case 2:
                     paused = not paused
+                    Ui.paused = paused
 
                 case 3:
                     shortest_distance = 10000000
@@ -128,7 +151,8 @@ while True:
                         case 'boid':
                             for boid in Boid.boids:
                                 if (
-                                        Vector2(*event.pos) - boid.pos).length() < shortest_distance and not boid.is_predator:
+                                        Vector2(
+                                            *event.pos) - boid.pos).length() < shortest_distance and not boid.is_predator:
                                     shortest_distance = (Vector2(*event.pos) - boid.pos).length()
                                     obj = boid
 
@@ -147,7 +171,8 @@ while True:
                         case 'obstacle':
                             for obstacle in Obstacle.obstacles:
                                 if (
-                                        Vector2(*event.pos) - obstacle.pos).length() < shortest_distance and not obstacle.bad:
+                                        Vector2(
+                                            *event.pos) - obstacle.pos).length() < shortest_distance and not obstacle.bad:
                                     shortest_distance = (Vector2(*event.pos) - obstacle.pos).length()
                                     obj = obstacle
 
@@ -203,6 +228,7 @@ while True:
             match event.key:
                 case pg.K_SPACE:
                     paused = not paused
+                    Ui.paused = paused
                 case pg.K_PERIOD:
                     next_frame = True
     screen.fill('#444444')

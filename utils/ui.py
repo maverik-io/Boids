@@ -17,10 +17,17 @@ class Ui:
     y = (950 - (no_of_rows * row_height)) / 2 - 5
     width = 420
 
+    paused = False
+
+    pause_img = pg.transform.rotozoom(pg.image.load('Assets/pause.png'), 0, 0.2)
+    play_img = pg.transform.rotozoom(pg.image.load('Assets/play.png'), 0, 0.2)
+    next_img = pg.transform.rotozoom(pg.image.load('Assets/next.png'), 0, 0.25)
+    reset_img = pg.transform.rotozoom(pg.image.load('Assets/reset.png'), 0, 0.2)
+
     frame_count = 0
-    info_bg = pg.Surface((width + 20, 20 + row_height * no_of_rows), pg.SRCALPHA)
+    info_bg = pg.Surface((width + 20, 40 + row_height * no_of_rows), pg.SRCALPHA)
     info_bg.set_alpha(100)
-    pg.draw.rect(info_bg, 'black', (0, 0, width + 20, 20 + row_height * no_of_rows), 0, 10)
+    pg.draw.rect(info_bg, 'black', (0, 0, width + 20, 40 + row_height * no_of_rows), 0, 10)
 
     _open = pg.Surface((50, 100), pg.SRCALPHA)
     _close = pg.Surface((50, 100), pg.SRCALPHA)
@@ -66,6 +73,12 @@ class Ui:
         'fps': pg.Rect(x + 225, y + 8 + 21 * row_height, 180, row_height),
     }
 
+    button_rects = {
+        'reset': pg.Rect(x + 150, y + 8 + 23 * row_height, 50, 1.5 * row_height),
+        'playpause': pg.Rect(x + 200, y + 8 + 23 * row_height, 50, 1.5 * row_height),
+        'next': pg.Rect(x + 250, y + 8 + 23 * row_height, 50, 1.5 * row_height),
+    }
+
     @staticmethod
     def draw(fps, screen, o, b, add_mode, goal_pos, fps_limit):
 
@@ -96,13 +109,13 @@ class Ui:
             f'FPS        : {fps:>10.0f}',
             'FPS Limit  :',  # '30 | 60 | ∞',
             '',
-            '.play-pause'
+            ' '
 
         ]
 
         if Ui.enabled:
             screen.blit(Ui.info_bg, (Ui.x, Ui.y))
-            pg.draw.rect(screen, 'white', (Ui.x, Ui.y, Ui.width + 20, 20 + Ui.row_height * no_of_rows), 2, 10)
+            pg.draw.rect(screen, 'white', (Ui.x, Ui.y, Ui.width + 20, 40 + Ui.row_height * no_of_rows), 2, 10)
 
             for rect in Ui.factor_rects.values():
                 pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, 10)
@@ -163,6 +176,30 @@ class Ui:
                         if rect.collidepoint(pos):
                             pg.draw.rect(screen, '#12bac9', rect.inflate(-3, 0), 2, 10)
 
+            for name, rect in Ui.button_rects.items():
+                match name:
+                    case 'reset':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, border_top_left_radius=10,
+                                     border_bottom_left_radius=10)
+
+                        screen.blit(Ui.reset_img, Ui.reset_img.get_rect(center=rect.center))
+                    case 'playpause':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0)
+
+                        if Ui.paused:
+                            screen.blit(Ui.play_img, Ui.play_img.get_rect(center=rect.center))
+                        else:
+                            screen.blit(Ui.pause_img, Ui.pause_img.get_rect(center=rect.center))
+                    case 'next':
+                        pg.draw.rect(screen, '#444444', rect.inflate(-6, -6), 0, border_top_right_radius=10,
+                                     border_bottom_right_radius=10)
+
+                        Ui.next_img.set_alpha(255)
+                        if not Ui.paused:
+                            Ui.next_img.set_alpha(100)
+
+                        screen.blit(Ui.next_img, Ui.next_img.get_rect(center=rect.center))
+
             for i, line in enumerate(lines):
                 if line == '':
                     pg.draw.line(screen, 'white', (Ui.x, Ui.y + (Ui.row_height + 10) / 2 + i * Ui.row_height),
@@ -180,7 +217,6 @@ class Ui:
             screen.blit(Ui._open, Ui.open_rect)
             pg.draw.rect(screen, 'white', Ui.open_rect, 2, border_top_left_radius=10,
                          border_bottom_left_radius=10)
-            screen.blit(Ui.open_icon, Ui.open_icon_rect)
 
         if Boid.goal_exists:
             pg.draw.circle(screen, 'green' if Boid.goal_polarity > 0 else 'red', goal_pos, 10, 2)
