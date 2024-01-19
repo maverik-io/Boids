@@ -217,6 +217,7 @@ class Ui:
             screen.blit(Ui._open, Ui.open_rect)
             pg.draw.rect(screen, 'white', Ui.open_rect, 2, border_top_left_radius=10,
                          border_bottom_left_radius=10)
+            screen.blit(Ui.open_icon, Ui.open_icon_rect)
 
         if Boid.goal_exists:
             pg.draw.circle(screen, 'green' if Boid.goal_polarity > 0 else 'red', goal_pos, 10, 2)
